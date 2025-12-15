@@ -1,5 +1,6 @@
 console.log("Express Tutorial");
 const express = require("express");
+const cookieParser = require("cookie-parser");
 const { products, people } = require("./data");
 const { peopleRouter } = require("./routes/people");
 const app = express();
@@ -9,6 +10,16 @@ function logger(req, res, next) {
   console.log(req.url);
   console.log(new Date().getTime());
   next();
+}
+
+function auth(req, res, next) {
+  const name = req.cookies.name;
+  if (name) {
+    req.user = name;
+    next();
+  } else {
+    res.status(401).json({ message: "unauthorized" });
+  }
 }
 
 app.use(express.static("./methods-public"));
@@ -28,6 +39,7 @@ app.get("/api/v1/products", (req, res) => {
 
 app.use(express.urlencoded({ extended: false }));
 app.use(express.json());
+app.use(cookieParser());
 app.use("/api/v1/people", peopleRouter);
 // app.post("/api/v1/people", (req, res) => {
 //   if (!req.body.name) {
@@ -37,6 +49,25 @@ app.use("/api/v1/people", peopleRouter);
 //     res.status(201).json({ success: true, name: req.body.name });
 //   }
 // });
+
+app.post("/logon", (req, res) => {
+  const name = req.body.name;
+  if (name) {
+    res.cookie("name", name);
+    res.status(201).json({ message: `Hello ${name}` });
+  } else {
+    res.status(400).json({ message: "User name required" });
+  }
+});
+
+app.delete("/logoff", (req, res) => {
+  res.clearCookie("name");
+  res.status(200).json({ message: "User has logged off" });
+});
+
+app.get("/test", auth, (req, res) => {
+  res.status(200).json({ message: `Welcome ${req.user}` });
+});
 
 app.get("/api/v1/products/:productID", (req, res) => {
   const idToFind = parseInt(req.params.productID);
