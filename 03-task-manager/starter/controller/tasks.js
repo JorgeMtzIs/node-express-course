@@ -27,6 +27,9 @@ const updateTask = asyncWrapper(async (req, res) => {
     new: true,
     runValidators: true,
   });
+  if (!task) {
+    return next(createCustomError(`No task with id: ${taskID}`, 404));
+  }
   res.status(200).json({ task });
 });
 
